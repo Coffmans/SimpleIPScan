@@ -24,47 +24,18 @@ jobs:
       - name: Restore NuGet packages
         run: dotnet restore SimpleIPScan.sln
 
-      # 4. Set version
-      - name: Set version
-        id: version
-        run: |
-          $version = "${{ github.event.inputs.version_prefix }}.${{ github.run_number }}"
-          echo "VERSION=$version" >> $env:GITHUB_OUTPUT
-
-      # 5. Build the project
+      # 4. Build the project
       - name: Build
         run: |
           dotnet build SimpleIPScan.csproj `
             --configuration Release `
             --no-restore `
-            /p:Version=${{ steps.version.outputs.VERSION }} `
-            /p:AssemblyVersion=${{ steps.version.outputs.VERSION }} `
-            /p:FileVersion=${{ steps.version.outputs.VERSION }}
 
-      # 6. Upload build artifact
+      # 5. Upload build artifact
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SimpleIPScan-${{ steps.version.outputs.VERSION }}
+          name: SimpleIPScan
           path: bin\Release\
           retention-days: 30
 
-      # 7. Update version in .csproj
-      - name: Update version in .csproj
-        run: |
-          $csproj = "SimpleIPScan.csproj"
-          $version = "${{ steps.version.outputs.VERSION }}"
-          (Get-Content $csproj) `
-            -replace '<Version>.*?</Version>', "<Version>$version</Version>" |
-            Set-Content $csproj
-
-      # 8. Commit version bump
-      - name: Commit version bump
-        run: |
-          git config user.name  "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add SimpleIPScan.csproj
-          git diff --staged --quiet || git commit -m "ci: bump version to ${{ steps.version.outputs.VERSION }}"
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
